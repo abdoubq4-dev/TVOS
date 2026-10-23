@@ -1,0 +1,5 @@
+halo/build/
+*.keystore
+backup/
+*.apk
+.DS_Store

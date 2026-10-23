@@ -1,0 +1,12 @@
+# Disabled for user 0 (reversible with restore.sh). One package per line.
+com.google.android.apps.tv.launcherx        # stock Google TV home: ads, sponsored rows
+com.google.android.tvlauncher               # legacy Android TV home (fallback copy)
+android.autoinstalls.config.google.gtvpai   # silently installs promoted apps
+com.google.android.play.games               # Play Games
+com.google.android.videos                   # Google TV / Play Movies storefront
+com.google.android.feedback                 # feedback reporter
+com.android.tv.feedbackconsent              # feedback consent prompt
+com.google.android.tv.remotecontrol.logging # remote usage logging
+com.android.printspooler                    # printing (no printers on a TV)
+com.google.android.tungsten.setupwraith      # setup wizard; its recovery screen hijacks Home
+com.google.android.apps.tv.dreamx           # Google Ambient Mode screensaver (shows ads); replaced by Aerial Views
