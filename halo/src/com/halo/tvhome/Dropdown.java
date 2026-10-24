@@ -188,7 +188,7 @@ final class Dropdown extends FrameLayout {
         t.setFocusable(true);
         t.setOnClickListener(v -> click.run());
         t.setOnFocusChangeListener((v, f) -> v.animate().scaleX(f ? 1.06f : 1f).scaleY(f ? 1.06f : 1f)
-                .translationZ(f ? Ui.dp(8) : 0).setStartDelay(0).setDuration(460).setInterpolator(Spring.FOCUS).start());
+                .translationZ(f ? Ui.dp(8) : 0).setStartDelay(0).setDuration(300).setInterpolator(Spring.FOCUS).start());
         GridLayout.LayoutParams lp = new GridLayout.LayoutParams(
                 GridLayout.spec(row, rowSpan), GridLayout.spec(col, colSpan));
         lp.width = w;
@@ -276,7 +276,7 @@ final class Dropdown extends FrameLayout {
             t.setAlpha(0f);
             t.setScaleX(0.86f);
             t.setScaleY(0.86f);
-            t.animate().alpha(1f).scaleX(1f).scaleY(1f).setStartDelay(40 + i * 28L).setDuration(460)
+            t.animate().alpha(1f).scaleX(1f).scaleY(1f).setStartDelay(20 + i * 18L).setDuration(320)
                     .setInterpolator(Spring.PANEL).start();
         }
     }
@@ -291,7 +291,7 @@ final class Dropdown extends FrameLayout {
         card.setScaleY(0.92f);
         card.setTranslationY(-Ui.dp(8));
         cascade();
-        card.animate().alpha(1f).scaleX(1f).scaleY(1f).translationY(0).setDuration(500)
+        card.animate().alpha(1f).scaleX(1f).scaleY(1f).translationY(0).setDuration(340)
                 .setInterpolator(Spring.PANEL).start();
         post(() -> {
             View first = firstFocusable(card);

@@ -103,7 +103,7 @@ final class MenuOverlay extends FrameLayout {
         card.setScaleX(0.94f);
         card.setScaleY(0.94f);
         animate().alpha(1f).setDuration(160).start();
-        card.animate().scaleX(1f).scaleY(1f).setDuration(480).setInterpolator(Spring.PANEL).start();
+        card.animate().scaleX(1f).scaleY(1f).setDuration(340).setInterpolator(Spring.PANEL).start();
         View first = card.getChildAt(subtitle != null ? 3 : 2);
         if (first != null) first.requestFocus();
     }

@@ -431,7 +431,7 @@ public class HomeActivity extends Activity
         if (row == currentRow) return;
         currentRow = row;
         float ty = row == 0 ? 0 : Ui.dp(150) - grid.rowY(row);
-        content.animate().translationY(ty).setDuration(640).setInterpolator(Spring.SCROLL)
+        content.animate().translationY(ty).setDuration(440).setInterpolator(Spring.SCROLL)
                 .setUpdateListener(a -> grid.dock.invalidate()).start();
         float top = row == 0 ? 1f : 0f;
         nowPlaying.animate().alpha(top).setDuration(row == 0 ? 320 : 160).start();

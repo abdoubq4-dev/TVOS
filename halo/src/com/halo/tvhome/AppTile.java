@@ -103,12 +103,12 @@ final class AppTile extends View {
         }
         animate().scaleX(gained ? GridPanel.FOCUS_SCALE : 1f).scaleY(gained ? GridPanel.FOCUS_SCALE : 1f)
                 .translationZ(gained ? Ui.dp(22) : 0).translationX(0).translationY(0)
-                .setDuration(gained ? 520 : 440).setInterpolator(Spring.FOCUS).start();
+                .setDuration(gained ? 320 : 280).setInterpolator(Spring.FOCUS).start();
         label.animate().alpha(gained && showLabel ? 1f : 0f).translationY(gained ? Ui.dp(8) : 0)
                 .setDuration(gained ? 220 : 120).setInterpolator(EASE).start();
         stop(sheenAnim);
         sheenAnim = ValueAnimator.ofFloat(glow, gained ? 1f : 0f);
-        sheenAnim.setDuration(gained ? 360 : 180);
+        sheenAnim.setDuration(gained ? 220 : 150);
         sheenAnim.setInterpolator(EASE);
         sheenAnim.addUpdateListener(a -> {
             glow = (float) a.getAnimatedValue();
@@ -146,8 +146,8 @@ final class AppTile extends View {
     void nudge(int dx, int dy) {
         animate().translationX(dx * Ui.dp(7)).translationY(dy * Ui.dp(7)).setDuration(80)
                 .setInterpolator(EASE)
-                .withEndAction(() -> animate().translationX(0).translationY(0).setDuration(480)
-                        .setInterpolator(new Spring(0.45f)).start())
+                .withEndAction(() -> animate().translationX(0).translationY(0).setDuration(340)
+                        .setInterpolator(new Spring(0.45f, 4f)).start())
                 .start();
     }
 

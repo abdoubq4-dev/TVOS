@@ -98,7 +98,7 @@ final class AppMenu extends FrameLayout {
         card.setAlpha(0f);
         card.setScaleX(0.9f);
         card.setScaleY(0.9f);
-        card.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(480).setInterpolator(Spring.PANEL).start();
+        card.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(340).setInterpolator(Spring.PANEL).start();
         if (focusFirst != null) post(focusFirst::requestFocus);
     }
 
