@@ -77,6 +77,36 @@ final class Glass {
         return s;
     }
 
+    /** White text/icons on dark glass, in both states: tvOS 26 focus brightens the glass instead. */
+    static final ColorStateList ON_GLASS = ColorStateList.valueOf(0xFFFFFFFF);
+
+    /** tvOS 26 focus on dark glass: a brighter, still-translucent frosted fill with a bright rim. */
+    static GradientDrawable glassLit(float radiusDp) {
+        GradientDrawable on = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[] {0x80FFFFFF, 0x52FFFFFF});
+        on.setCornerRadius(Ui.dp(radiusDp));
+        on.setStroke(Math.max(1, Ui.dp(0.75f)), 0x99FFFFFF);
+        return on;
+    }
+
+    static Drawable glassButton(float radiusDp, int idleFill) {
+        StateListDrawable s = new StateListDrawable();
+        s.addState(new int[] {android.R.attr.state_focused}, glassLit(radiusDp));
+        s.addState(new int[] {}, panel(radiusDp, idleFill));
+        s.setEnterFadeDuration(120);
+        s.setExitFadeDuration(120);
+        return s;
+    }
+
+    static Drawable glassRow(float radiusDp) {
+        StateListDrawable s = new StateListDrawable();
+        s.addState(new int[] {android.R.attr.state_focused}, glassLit(radiusDp));
+        s.addState(new int[] {}, new android.graphics.drawable.ColorDrawable(0));
+        s.setEnterFadeDuration(120);
+        s.setExitFadeDuration(120);
+        return s;
+    }
+
     /** Row highlight used in lists: transparent until focused. */
     static Drawable row(float radiusDp) {
         StateListDrawable s = new StateListDrawable();

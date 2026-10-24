@@ -109,18 +109,18 @@ final class Dropdown extends FrameLayout {
             LinearLayout t = new LinearLayout(getContext());
             t.setOrientation(LinearLayout.VERTICAL);
             t.setGravity(Gravity.CENTER);
-            t.setBackground(Glass.button(ROW_RADIUS, 0x26FFFFFF));
+            t.setBackground(Glass.glassButton(ROW_RADIUS, 0x26FFFFFF));
             t.setFocusable(true);
             t.setOnClickListener(v -> clicks[idx].run());
             Glass.lift(t, 1f);
             ImageView iv = new ImageView(getContext());
             iv.setImageResource(icons[i]);
-            iv.setImageTintList(Glass.FG);
+            iv.setImageTintList(Glass.ON_GLASS);
             iv.setDuplicateParentStateEnabled(true);
             t.addView(iv, new LinearLayout.LayoutParams(Ui.dp(22), Ui.dp(22)));
             if (labels[i] != null) {
                 TextView l = text(10.5f, 600, 0);
-                l.setTextColor(Glass.FG_DIM);
+                l.setTextColor(Glass.ON_GLASS);
                 l.setDuplicateParentStateEnabled(true);
                 l.setText(labels[i]);
                 l.setGravity(Gravity.CENTER);
@@ -167,10 +167,9 @@ final class Dropdown extends FrameLayout {
         // Rounded square for the big tile; capsules and circles (radius = half height) otherwise.
         final float r = rowSpan > 1 ? Ui.dp(CC_RADIUS) : h / 2f;
         android.graphics.drawable.StateListDrawable bg = new android.graphics.drawable.StateListDrawable();
-        android.graphics.drawable.GradientDrawable on = new android.graphics.drawable.GradientDrawable(
-                android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM, new int[] {0xF5FFFFFF, 0xE6F2F2F5});
-        on.setCornerRadius(r);
-        bg.addState(new int[] {android.R.attr.state_focused}, on);
+        bg.addState(new int[] {android.R.attr.state_focused}, new android.graphics.drawable.LayerDrawable(
+                new android.graphics.drawable.Drawable[] {
+                        new FrostDrawable(t, behind, r, 0xA6545458, 0xB33A3A3E, 0), litPx(r)}));
         // Frosted, mostly opaque glass (Apple's Control Center reads well over any background):
         // a smoky grey fill over the blur, lighter at the top, with a bright rim.
         bg.addState(new int[] {}, new FrostDrawable(t, behind, r, 0xA6545458, 0xB33A3A3E, 0x59FFFFFF));
@@ -198,6 +197,12 @@ final class Dropdown extends FrameLayout {
         return t;
     }
 
+    private static android.graphics.drawable.GradientDrawable litPx(float radiusPx) {
+        android.graphics.drawable.GradientDrawable on = Glass.glassLit(0);
+        on.setCornerRadius(radiusPx);
+        return on;
+    }
+
     private ImageView ccIcon(int res, int sizeDp, android.content.res.ColorStateList tint) {
         ImageView iv = new ImageView(getContext());
         iv.setImageResource(res);
@@ -212,9 +217,9 @@ final class Dropdown extends FrameLayout {
         LinearLayout t = (LinearLayout) ccTile(row, col, 2, 2, click);
         t.setOrientation(LinearLayout.VERTICAL);
         t.setGravity(Gravity.CENTER);
-        t.addView(ccIcon(icon, 46, Glass.FG));
+        t.addView(ccIcon(icon, 46, Glass.ON_GLASS));
         TextView l = text(12.5f, 640, 0);
-        l.setTextColor(Glass.FG);
+        l.setTextColor(Glass.ON_GLASS);
         l.setDuplicateParentStateEnabled(true);
         l.setText(label);
         l.setGravity(Gravity.CENTER);
@@ -229,7 +234,7 @@ final class Dropdown extends FrameLayout {
         t.setGravity(Gravity.CENTER_VERTICAL);
         t.setPadding(Ui.dp(16), 0, Ui.dp(12), 0);
         // White icons turn dark on the white focused tile; coloured ones keep their colour.
-        int focusedTint = iconTint == 0xFFFFFFFF ? 0xFF000000 : iconTint;
+        int focusedTint = iconTint;
         t.addView(ccIcon(icon, 24, new android.content.res.ColorStateList(
                 new int[][] {new int[] {android.R.attr.state_focused}, new int[] {}},
                 new int[] {focusedTint, iconTint})));
@@ -240,7 +245,7 @@ final class Dropdown extends FrameLayout {
         cl.leftMargin = Ui.dp(11);
         t.addView(col2, cl);
         TextView a = text(12, 640, 0);
-        a.setTextColor(Glass.FG);
+        a.setTextColor(Glass.ON_GLASS);
         a.setDuplicateParentStateEnabled(true);
         a.setText(title);
         if (status == null) {  // title-only tiles wrap to two lines, like "Do Not / Disturb"
@@ -252,7 +257,7 @@ final class Dropdown extends FrameLayout {
         TextView b = text(10.5f, 500, 0);
         b.setTextColor(new android.content.res.ColorStateList(
                 new int[][] {new int[] {android.R.attr.state_focused}, new int[] {}},
-                new int[] {0x99000000, 0x99FFFFFF}));
+                new int[] {0xB3FFFFFF, 0x99FFFFFF}));
         b.setDuplicateParentStateEnabled(true);
         b.setText(status);
         b.setPadding(0, Ui.dp(2), 0, 0);
@@ -264,7 +269,7 @@ final class Dropdown extends FrameLayout {
     Dropdown ccSmall(int row, int col, int icon, Runnable click) {
         LinearLayout t = (LinearLayout) ccTile(row, col, 1, 1, click);
         t.setGravity(Gravity.CENTER);
-        t.addView(ccIcon(icon, 22, Glass.FG));
+        t.addView(ccIcon(icon, 22, Glass.ON_GLASS));
         return this;
     }
 
@@ -326,7 +331,7 @@ final class Dropdown extends FrameLayout {
         r.setGravity(Gravity.CENTER_VERTICAL);
         r.setPadding(Ui.dp(12), 0, Ui.dp(12), 0);
         if (focusable) {
-            r.setBackground(Glass.button(ROW_RADIUS, fill));
+            r.setBackground(Glass.glassButton(ROW_RADIUS, fill));
             r.setFocusable(true);
             Glass.lift(r, 1f);
         }
@@ -344,7 +349,7 @@ final class Dropdown extends FrameLayout {
         cl.leftMargin = Ui.dp(12);
         r.addView(col, cl);
         TextView t = text(focusable ? 14.5f : 16, 600, 0);
-        t.setTextColor(Glass.FG);
+        t.setTextColor(Glass.ON_GLASS);
         t.setDuplicateParentStateEnabled(true);
         t.setText(title);
         col.addView(t);
@@ -352,7 +357,7 @@ final class Dropdown extends FrameLayout {
             TextView s = text(12, 480, 0);
             s.setTextColor(new android.content.res.ColorStateList(
                     new int[][] {new int[] {android.R.attr.state_focused}, new int[] {}},
-                    new int[] {0x99000000, 0x99FFFFFF}));
+                    new int[] {0xB3FFFFFF, 0x99FFFFFF}));
             s.setDuplicateParentStateEnabled(true);
             s.setText(subtitle);
             s.setPadding(0, Ui.dp(2), 0, 0);

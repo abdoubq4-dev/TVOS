@@ -256,7 +256,12 @@ public class HomeActivity extends Activity
 
         root.getViewTreeObserver().addOnGlobalFocusChangeListener((oldV, newV) -> {
             boolean inBar = newV != null && (isInside(newV, controlBar) || dropdown.isOpen());
-            if (inBar) refreshCapsule();
+            if (inBar) {
+                refreshCapsule();
+                // Time lines up with Control Center's left edge (the panel is right-aligned).
+                int sw = getResources().getDisplayMetrics().widthPixels;
+                controlBar.setExpandedTimeX(sw - Ui.dp(28) - Ui.dp(Dropdown.CC_WIDTH));
+            }
             controlBar.setExpanded(inBar);
             if (newV instanceof AppTile) onTileFocused((AppTile) newV);
             else if (newV != null && (isInside(newV, nowPlaying) || isInside(newV, controlBar))) setRow(0);
@@ -287,9 +292,17 @@ public class HomeActivity extends Activity
      */
     private void setGlass(Bitmap frost) {
         grid.dock.setFrost(frost);
+        // The top pills are Apple's *clear* glass: the backdrop shows through almost unchanged
+        // (a whisper of darkening), with a bright rim catching the light.
+        Bitmap sharp = wallpaper;
+        if (artKey != null && bgArt.getDrawable() instanceof android.graphics.drawable.BitmapDrawable) {
+            sharp = ((android.graphics.drawable.BitmapDrawable) bgArt.getDrawable()).getBitmap();
+        }
         float r = Ui.dp(ControlBar.HEIGHT / 2f);
-        weather.setBackground(new FrostDrawable(weather, frost, r, 0x24FFFFFF, 0x24FFFFFF, 0));
-        controlBar.setBackground(new FrostDrawable(controlBar, frost, r, 0x24FFFFFF, 0x24FFFFFF, 0));
+        int bgAlpha = controlBar.getBackground() != null ? controlBar.getBackground().getAlpha() : 255;
+        weather.setBackground(new FrostDrawable(weather, sharp, r, 0x1A000000, 0x26000000, 0x8CFFFFFF));
+        controlBar.setBackground(new FrostDrawable(controlBar, sharp, r, 0x1A000000, 0x26000000, 0x8CFFFFFF));
+        controlBar.getBackground().setAlpha(bgAlpha);
     }
 
     private void refreshWeather() {

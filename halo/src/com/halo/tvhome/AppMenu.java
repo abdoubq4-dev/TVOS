@@ -34,7 +34,7 @@ final class AppMenu extends FrameLayout {
     }
 
     private static final int WIDTH = 236, RADIUS = 20, INSET = 6, ROW_H = 36, GAP = 2;
-    private static final ColorStateList TEXT = states(0xFF000000, 0xF2FFFFFF);
+    private static final ColorStateList TEXT = states(0xFFFFFFFF, 0xF2FFFFFF);
     private static final ColorStateList RED = states(0xFFFF3B30, 0xFFFF453A);
 
     private final LinearLayout card;
@@ -115,7 +115,7 @@ final class AppMenu extends FrameLayout {
         LinearLayout r = new LinearLayout(c);
         r.setGravity(Gravity.CENTER_VERTICAL);
         r.setPadding(Ui.dp(10), 0, Ui.dp(10), 0);
-        r.setBackground(Glass.softRow(RADIUS - INSET));
+        r.setBackground(Glass.glassRow(RADIUS - INSET));
         r.setFocusable(true);
         r.setOnFocusChangeListener((v, f) -> v.animate().translationZ(f ? Ui.dp(2) : 0).setDuration(160).start());
         TextView t = text(13.5f, 560, 0);

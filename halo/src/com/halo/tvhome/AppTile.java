@@ -11,7 +11,6 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.view.View;
 import android.view.ViewOutlineProvider;
-import android.view.animation.LinearInterpolator;
 import android.view.animation.PathInterpolator;
 import android.widget.TextView;
 
@@ -31,7 +30,7 @@ final class AppTile extends View {
     private final RectF rect = new RectF();
     private final float radius = Ui.dp(GridPanel.TILE_RADIUS);
     private float glow;
-    private ValueAnimator sheenAnim, tiltAnim, wiggleAnim;
+    private ValueAnimator sheenAnim, wiggleAnim;
 
     AppTile(Context c, AppEntry app, TextView label) {
         super(c);
@@ -115,31 +114,9 @@ final class AppTile extends View {
             invalidate();
         });
         sheenAnim.start();
-        if (gained) {
-            startTilt();
-        } else {
-            stop(tiltAnim);
-            placeLight(0f);
-            animate().rotationX(0).rotationY(0);
-        }
-    }
-
-    /** Gentle sway while focused, standing in for the Siri Remote touch tilt; the light follows. */
-    private void startTilt() {
-        stop(tiltAnim);
-        tiltAnim = ValueAnimator.ofFloat(0f, (float) (Math.PI * 2));
-        tiltAnim.setDuration(7000);
-        tiltAnim.setStartDelay(300);
-        tiltAnim.setRepeatCount(ValueAnimator.INFINITE);
-        tiltAnim.setInterpolator(new LinearInterpolator());
-        tiltAnim.addUpdateListener(a -> {
-            float t = (float) a.getAnimatedValue();
-            setRotationY((float) Math.sin(t) * 1.6f);
-            setRotationX((float) Math.cos(t) * 1.0f);
-            placeLight(t);
-            invalidate();
-        });
-        tiltAnim.start();
+        // No continuous sway: with a button remote there is no thumb to follow, and an endless
+        // animation keeps the TV GPU busy, which delayed every remote press.
+        placeLight(0f);
     }
 
     /** A nudge toward a d-pad press that hits the edge of the grid. */

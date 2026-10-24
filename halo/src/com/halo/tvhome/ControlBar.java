@@ -97,10 +97,35 @@ final class ControlBar extends LinearLayout {
         return f;
     }
 
-    /** Slide the Control Center buttons open (focus entered the capsule) or closed. */
+    /**
+     * tvOS 26: entering the bar dissolves the capsule. The time slides left to line up with the
+     * Control Center below, and each button stands alone with its own focus highlight.
+     */
+    private ValueAnimator dissolve;
+    private float timeShift;
+
+    /** Screen x (px) the time should move to when expanded. */
+    void setExpandedTimeX(float screenX) {
+        int[] loc = new int[2];
+        time.getLocationOnScreen(loc);
+        timeShift = screenX - (loc[0] - time.getTranslationX());
+    }
+
     void setExpanded(boolean e) {
         if (e == expanded) return;
         expanded = e;
+        if (dissolve != null) dissolve.cancel();
+        final android.graphics.drawable.Drawable bg = getBackground();
+        float from = bg != null ? bg.getAlpha() / 255f : 1f;
+        dissolve = ValueAnimator.ofFloat(from, e ? 0f : 1f);
+        dissolve.setDuration(e ? 300 : 260);
+        dissolve.setInterpolator(AppTile.EASE);
+        dissolve.addUpdateListener(a -> {
+            float v = (float) a.getAnimatedValue();
+            android.graphics.drawable.Drawable b = getBackground();
+            if (b != null) b.setAlpha(Math.round(255 * v));
+        });
+        dissolve.start();
         icons.setDescendantFocusability(e ? FOCUS_AFTER_DESCENDANTS : FOCUS_BLOCK_DESCENDANTS);
         if (anim != null) anim.cancel();
         final ViewGroup.LayoutParams lp = icons.getLayoutParams();
@@ -113,6 +138,15 @@ final class ControlBar extends LinearLayout {
         });
         anim.start();
         icons.animate().alpha(e ? 1f : 0f).setStartDelay(e ? 80 : 0).setDuration(e ? 220 : 120).start();
+        // Time slides left after the icons have opened (their width changes where it starts).
+        if (e) {
+            postDelayed(() -> {
+                if (!expanded) return;
+                time.animate().translationX(timeShift).setDuration(380).setInterpolator(Spring.PANEL).start();
+            }, 0);
+        } else {
+            time.animate().translationX(0).setDuration(300).setInterpolator(Spring.PANEL).start();
+        }
     }
 
     private int iconsWidth() {

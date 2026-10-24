@@ -3,6 +3,7 @@ package com.halo.tvhome;
 import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
@@ -29,6 +30,7 @@ final class FrostDrawable extends Drawable {
     private final float scale;
     private final float radius;
     private final int washTop, washBottom;
+    private int rimColor;
     private final Matrix m = new Matrix();
     private final RectF r = new RectF();
     private final int[] loc = new int[2];
@@ -44,8 +46,9 @@ final class FrostDrawable extends Drawable {
                 : host.getResources().getDisplayMetrics().widthPixels / (float) snapshot.getWidth();
         frost.setShader(shader);
         rim.setStyle(Paint.Style.STROKE);
-        rim.setStrokeWidth(Math.max(1, Ui.dp(0.75f)));
+        rim.setStrokeWidth(Math.max(1, Ui.dp(1f)));
         rim.setColor(rimColor);
+        this.rimColor = rimColor;
     }
 
     @Override
@@ -70,14 +73,26 @@ final class FrostDrawable extends Drawable {
         }
         c.drawRoundRect(r, radius, radius, wash);
         c.drawRoundRect(r, radius, radius, sheen);
-        if (rim.getColor() != 0) {
+        if (rimColor != 0) {
             float in = rim.getStrokeWidth() / 2;
             r.inset(in, in);
             c.drawRoundRect(r, radius - in, radius - in, rim);
         }
     }
 
-    @Override public void setAlpha(int a) {}
+    private int alpha = 255;
+
+    /** Fades the whole material (used when the top bar dissolves into separate buttons). */
+    @Override public void setAlpha(int a) {
+        alpha = a;
+        frost.setAlpha(a);
+        wash.setAlpha(a);
+        sheen.setAlpha(a);
+        rim.setAlpha(Math.round(Color.alpha(rimColor) * a / 255f));
+        invalidateSelf();
+    }
+
+    @Override public int getAlpha() { return alpha; }
     @Override public void setColorFilter(ColorFilter f) {}
     @Override public int getOpacity() { return PixelFormat.TRANSLUCENT; }
 }
