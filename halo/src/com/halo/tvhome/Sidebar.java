@@ -140,7 +140,7 @@ final class Sidebar extends FrameLayout {
         setVisibility(VISIBLE);
         panel.setAlpha(0f);
         panel.setTranslationX(-Ui.dp(28));
-        panel.animate().alpha(1f).translationX(0).setDuration(260).setInterpolator(AppTile.EASE).start();
+        panel.animate().alpha(1f).translationX(0).setDuration(560).setInterpolator(Spring.PANEL).start();
         homeRow.requestFocus();
     }
 

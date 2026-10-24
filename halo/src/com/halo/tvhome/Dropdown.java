@@ -171,7 +171,9 @@ final class Dropdown extends FrameLayout {
                 android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM, new int[] {0xF5FFFFFF, 0xE6F2F2F5});
         on.setCornerRadius(r);
         bg.addState(new int[] {android.R.attr.state_focused}, on);
-        bg.addState(new int[] {}, new FrostDrawable(t, behind, r, 0x38FFFFFF, 0x24FFFFFF, 0x66FFFFFF));
+        // Frosted, mostly opaque glass (Apple's Control Center reads well over any background):
+        // a smoky grey fill over the blur, lighter at the top, with a bright rim.
+        bg.addState(new int[] {}, new FrostDrawable(t, behind, r, 0xA6545458, 0xB33A3A3E, 0x59FFFFFF));
         bg.setEnterFadeDuration(150);
         bg.setExitFadeDuration(150);
         t.setBackground(bg);
@@ -185,8 +187,8 @@ final class Dropdown extends FrameLayout {
         t.setElevation(Ui.dp(6));
         t.setFocusable(true);
         t.setOnClickListener(v -> click.run());
-        t.setOnFocusChangeListener((v, f) -> v.animate().scaleX(f ? 1.05f : 1f).scaleY(f ? 1.05f : 1f)
-                .translationZ(f ? Ui.dp(8) : 0).setDuration(180).setInterpolator(AppTile.EASE).start());
+        t.setOnFocusChangeListener((v, f) -> v.animate().scaleX(f ? 1.06f : 1f).scaleY(f ? 1.06f : 1f)
+                .translationZ(f ? Ui.dp(8) : 0).setStartDelay(0).setDuration(460).setInterpolator(Spring.FOCUS).start());
         GridLayout.LayoutParams lp = new GridLayout.LayoutParams(
                 GridLayout.spec(row, rowSpan), GridLayout.spec(col, colSpan));
         lp.width = w;
@@ -266,6 +268,19 @@ final class Dropdown extends FrameLayout {
         return this;
     }
 
+    /** Control Center tiles arrive one after another, each popping in on a spring. */
+    private void cascade() {
+        if (ccGrid == null || ccGrid.getParent() != card) return;
+        for (int i = 0; i < ccGrid.getChildCount(); i++) {
+            View t = ccGrid.getChildAt(i);
+            t.setAlpha(0f);
+            t.setScaleX(0.86f);
+            t.setScaleY(0.86f);
+            t.animate().alpha(1f).scaleX(1f).scaleY(1f).setStartDelay(40 + i * 28L).setDuration(460)
+                    .setInterpolator(Spring.PANEL).start();
+        }
+    }
+
     void show(Runnable onClose) {
         this.onClose = onClose;
         setVisibility(VISIBLE);
@@ -275,8 +290,9 @@ final class Dropdown extends FrameLayout {
         card.setScaleX(0.92f);
         card.setScaleY(0.92f);
         card.setTranslationY(-Ui.dp(8));
-        card.animate().alpha(1f).scaleX(1f).scaleY(1f).translationY(0).setDuration(240)
-                .setInterpolator(AppTile.EASE).start();
+        cascade();
+        card.animate().alpha(1f).scaleX(1f).scaleY(1f).translationY(0).setDuration(500)
+                .setInterpolator(Spring.PANEL).start();
         post(() -> {
             View first = firstFocusable(card);
             if (first != null) first.requestFocus();

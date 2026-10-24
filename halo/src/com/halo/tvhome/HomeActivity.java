@@ -431,7 +431,7 @@ public class HomeActivity extends Activity
         if (row == currentRow) return;
         currentRow = row;
         float ty = row == 0 ? 0 : Ui.dp(150) - grid.rowY(row);
-        content.animate().translationY(ty).setDuration(420).setInterpolator(AppTile.EASE)
+        content.animate().translationY(ty).setDuration(640).setInterpolator(Spring.SCROLL)
                 .setUpdateListener(a -> grid.dock.invalidate()).start();
         float top = row == 0 ? 1f : 0f;
         nowPlaying.animate().alpha(top).setDuration(row == 0 ? 320 : 160).start();
@@ -579,6 +579,15 @@ public class HomeActivity extends Activity
             }
             return true;
         }
+        if (e.getAction() == KeyEvent.ACTION_DOWN && (menu.isOpen() || appMenu.isOpen())) {
+            int dir = direction(e.getKeyCode());
+            View cur = getCurrentFocus();
+            if (dir != 0 && cur != null) {
+                View next = cur.focusSearch(dir);
+                View box = menu.isOpen() ? menu : appMenu;
+                if (next == null || !isInside(next, box)) return true;
+            }
+        }
         if (e.getAction() == KeyEvent.ACTION_DOWN && !menu.isOpen() && !appMenu.isOpen()) {
             int dir = direction(e.getKeyCode());
             View cur = getCurrentFocus();
@@ -603,6 +612,12 @@ public class HomeActivity extends Activity
                                 dir == View.FOCUS_UP ? -1 : dir == View.FOCUS_DOWN ? 1 : 0);
                         return true;
                     }
+                }
+                // The tile being left gets a tug toward the new one; the system then moves focus
+                // (and plays the TV's own navigation sound).
+                if (cur instanceof AppTile && next instanceof AppTile) {
+                    ((AppTile) cur).tug(dir == View.FOCUS_RIGHT ? 1 : dir == View.FOCUS_LEFT ? -1 : 0,
+                            dir == View.FOCUS_DOWN ? 1 : dir == View.FOCUS_UP ? -1 : 0);
                 }
             }
         }

@@ -92,9 +92,18 @@ final class AppTile extends View {
     @Override
     protected void onFocusChanged(boolean gained, int direction, Rect previous) {
         super.onFocusChanged(gained, direction, previous);
+        // tvOS "pull and land": the tile losing focus is tugged a few dp toward where focus
+        // went, the new one arrives from that side; both settle on a spring.
+        float pull = Ui.dp(5);
+        int dx = direction == FOCUS_RIGHT ? 1 : direction == FOCUS_LEFT ? -1 : 0;
+        int dy = direction == FOCUS_DOWN ? 1 : direction == FOCUS_UP ? -1 : 0;
+        if (gained && (dx != 0 || dy != 0)) {
+            setTranslationX(-dx * pull);
+            setTranslationY(-dy * pull);
+        }
         animate().scaleX(gained ? GridPanel.FOCUS_SCALE : 1f).scaleY(gained ? GridPanel.FOCUS_SCALE : 1f)
-                .translationZ(gained ? Ui.dp(22) : 0)
-                .setDuration(gained ? 220 : 160).setInterpolator(EASE).start();
+                .translationZ(gained ? Ui.dp(22) : 0).translationX(0).translationY(0)
+                .setDuration(gained ? 520 : 440).setInterpolator(Spring.FOCUS).start();
         label.animate().alpha(gained && showLabel ? 1f : 0f).translationY(gained ? Ui.dp(8) : 0)
                 .setDuration(gained ? 220 : 120).setInterpolator(EASE).start();
         stop(sheenAnim);
@@ -135,9 +144,17 @@ final class AppTile extends View {
 
     /** A nudge toward a d-pad press that hits the edge of the grid. */
     void nudge(int dx, int dy) {
-        animate().translationX(dx * Ui.dp(6)).translationY(dy * Ui.dp(6)).setDuration(90)
-                .withEndAction(() -> animate().translationX(0).translationY(0).setDuration(160).start())
+        animate().translationX(dx * Ui.dp(7)).translationY(dy * Ui.dp(7)).setDuration(80)
+                .setInterpolator(EASE)
+                .withEndAction(() -> animate().translationX(0).translationY(0).setDuration(480)
+                        .setInterpolator(new Spring(0.45f)).start())
                 .start();
+    }
+
+    /** Losing focus toward (dx, dy): a quick tug that way before the spring brings it home. */
+    void tug(int dx, int dy) {
+        setTranslationX(dx * Ui.dp(5));
+        setTranslationY(dy * Ui.dp(5));
     }
 
     void wiggle(boolean on) {
