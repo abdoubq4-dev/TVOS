@@ -132,11 +132,13 @@ public class HomeActivity extends Activity
         super.onStart();
         nowPlaying.start();
         ui.post(weatherTick);
+        scheduleRotation();
     }
 
     @Override
     protected void onStop() {
         ui.removeCallbacks(weatherTick);
+        ui.removeCallbacks(rotateTick);
         nowPlaying.stop();
         super.onStop();
     }
@@ -353,17 +355,109 @@ public class HomeActivity extends Activity
     }
 
     private void applyWallpaper(String name) {
-        // Pre-scaled once to the exact screen size: drawing a small bitmap stretched to full
-        // screen costs this GPU ~80ms a frame, while a 1:1 copy is nearly free.
+        Bitmap[] set = buildWallpaper(name);
+        showWallpaper(set, false);
+    }
+
+    /**
+     * Builds [home, scrolled-grid frost, dock frost], each pre-scaled once to the exact screen
+     * size (stretching a small bitmap every frame costs this GPU ~80ms). "Clear" style keeps the
+     * home backdrop sharp, so the glass on top has real detail to bend; "Soft" blurs it.
+     */
+    private Bitmap[] buildWallpaper(String name) {
         Bitmap full = Scenery.load(this, name);
-        android.util.DisplayMetrics dm = root.getResources().getDisplayMetrics();
-        wallpaper = Art.scrim(Art.toScreen(Art.glassBlur(full), dm));
-        wallpaperSoft = Art.toScreen(Art.blur(full), dm);
-        wallpaperDock = Art.toScreen(Art.dockBlur(full), dm);
-        full.recycle();
-        if (artKey == null) setGlass(wallpaperDock);
-        bgSharp.setImageBitmap(wallpaper);
-        if (artKey == null) bgFrost.setImageBitmap(wallpaperSoft);
+        android.util.DisplayMetrics dm = getResources().getDisplayMetrics();
+        Bitmap soft = Art.toScreen(Art.blur(full), dm);
+        Bitmap dock = Art.toScreen(Art.dockBlur(full), dm);
+        Bitmap home = clearStyle() ? Art.scrim(Art.toScreen(full, dm))
+                : Art.scrim(Art.toScreen(Art.glassBlur(full), dm));
+        if (!full.isRecycled()) full.recycle();
+        return new Bitmap[] {home, soft, dock};
+    }
+
+    private void showWallpaper(Bitmap[] set, boolean crossfade) {
+        Bitmap old = wallpaper;
+        wallpaper = set[0];
+        wallpaperSoft = set[1];
+        wallpaperDock = set[2];
+        if (crossfade && old != null && artKey == null) {
+            android.graphics.drawable.TransitionDrawable td = new android.graphics.drawable.TransitionDrawable(
+                    new android.graphics.drawable.Drawable[] {
+                            new android.graphics.drawable.BitmapDrawable(getResources(), old),
+                            new android.graphics.drawable.BitmapDrawable(getResources(), wallpaper)});
+            td.setCrossFadeEnabled(true);
+            bgSharp.setImageDrawable(td);
+            td.startTransition(1600);
+        } else {
+            bgSharp.setImageBitmap(wallpaper);
+        }
+        if (artKey == null) {
+            setGlass(wallpaperDock);
+            bgFrost.setImageBitmap(wallpaperSoft);
+        }
+    }
+
+    /** Builds off the main thread, then crossfades in. */
+    private void applyWallpaperAsync(String name) {
+        worker.execute(() -> {
+            Bitmap[] set = buildWallpaper(name);
+            ui.post(() -> showWallpaper(set, true));
+        });
+    }
+
+    private boolean clearStyle() {
+        return prefs.getBoolean("wallpaper_clear", false);
+    }
+
+    // ---- wallpaper rotation ----------------------------------------------------------------
+
+    private static final String[] ROTATE_LABELS = {"Off", "Every 15 Minutes", "Every Hour", "Every Day"};
+    private static final long[] ROTATE_MS = {0, 15 * 60_000L, 60 * 60_000L, 24 * 60 * 60_000L};
+
+    private final Runnable rotateTick = new Runnable() {
+        @Override
+        public void run() {
+            rotateWallpaper();
+            scheduleRotation();
+        }
+    };
+
+    private long rotateMs() {
+        return ROTATE_MS[Math.max(0, Math.min(ROTATE_MS.length - 1, prefs.getInt("wallpaper_rotate", 0)))];
+    }
+
+    private void scheduleRotation() {
+        ui.removeCallbacks(rotateTick);
+        long every = rotateMs();
+        if (every == 0) return;
+        long last = prefs.getLong("wallpaper_rotated_at", System.currentTimeMillis());
+        ui.postDelayed(rotateTick, Math.max(5_000, last + every - System.currentTimeMillis()));
+    }
+
+    /** Next photo wallpaper in order (falls back to every wallpaper if there are no photos). */
+    private void rotateWallpaper() {
+        List<String> pool = new ArrayList<>();
+        for (java.io.File f : Scenery.photos(this)) pool.add("Photo: " + f.getName());
+        if (pool.size() < 2) pool = Scenery.all(this);
+        String cur = prefs.getString("wallpaper", "Coast");
+        String next = pool.get((pool.indexOf(cur) + 1) % pool.size());
+        prefs.edit().putString("wallpaper", next).putLong("wallpaper_rotated_at", System.currentTimeMillis()).apply();
+        applyWallpaperAsync(next);
+    }
+
+    private void showWallpaperStyle() {
+        openMenu("Wallpaper Style", "Clear lets the glass show the full picture",
+                new String[] {"Clear (Unblurred)", "Soft (Blurred)"}, i -> {
+                    prefs.edit().putBoolean("wallpaper_clear", i == 0).apply();
+                    applyWallpaperAsync(prefs.getString("wallpaper", "Coast"));
+                });
+    }
+
+    private void showRotation() {
+        openMenu("Rotate Wallpapers", "Cycles through your wallpaper photos", ROTATE_LABELS, i -> {
+            prefs.edit().putInt("wallpaper_rotate", i).putLong("wallpaper_rotated_at", System.currentTimeMillis()).apply();
+            scheduleRotation();
+        });
     }
 
     // ---- data ----------------------------------------------------------------------------
@@ -833,6 +927,9 @@ public class HomeActivity extends Activity
     private void buildHome(Dropdown d) {
         d.header(R.drawable.ic_home, "Home Screen", null);
         d.row(R.drawable.ic_photo, "Wallpaper", prettyWallpaper(), then(this::showWallpapers));
+        d.row(R.drawable.ic_photo, "Wallpaper Style", clearStyle() ? "Clear" : "Soft", then(this::showWallpaperStyle));
+        d.row(R.drawable.ic_timer, "Rotate Wallpapers", ROTATE_LABELS[prefs.getInt("wallpaper_rotate", 0)],
+                then(this::showRotation));
         d.row(R.drawable.ic_photo, "Art Mode", null,
                 then(() -> Actions.start(this, new Intent(this, ArtModeActivity.class))));
         d.row(R.drawable.ic_grid, "Hidden Apps", hiddenEntries(repo.hidden()).size() + " hidden", then(this::showHidden));
@@ -990,8 +1087,8 @@ public class HomeActivity extends Activity
     private void showWallpapers() {
         List<String> names = Scenery.all(this);
         openMenu("Wallpaper", "Add your own photos with the setup script", names.toArray(new String[0]), i -> {
-            prefs.edit().putString("wallpaper", names.get(i)).apply();
-            applyWallpaper(names.get(i));
+            prefs.edit().putString("wallpaper", names.get(i)).putLong("wallpaper_rotated_at", System.currentTimeMillis()).apply();
+            applyWallpaperAsync(names.get(i));
         });
     }
 
