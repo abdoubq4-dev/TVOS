@@ -3,3 +3,28 @@ halo/build/
 backup/
 *.apk
 .DS_Store
+
+# Signing keys and credentials
+*.jks
+*.p12
+*.pem
+*.key
+.env
+.env.*
+local.properties
+
+# Personal files pushed to / pulled from the TV
+backup/
+art/
+wallpapers/
+*.heic
+*.mov
+*.mp4
+avatar.*
+
+# Build output and editor files
+build/
+*.class
+*.dex
+.idea/
+.vscode/
