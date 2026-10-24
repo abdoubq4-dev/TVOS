@@ -48,6 +48,9 @@ final class GridPanel extends ViewGroup {
         setClipToPadding(false);
         dock = new FrostDock(c);
         dock.radius = Ui.dp(DOCK_RADIUS);
+        // Keep the dock below every tile even when a settling tile's spring dips its Z a hair
+        // below zero; otherwise that tile is drawn under the dock glass and vanishes for a frame.
+        dock.setTranslationZ(-Ui.dp(6));
         addView(dock);
     }
 

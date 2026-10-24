@@ -361,7 +361,10 @@ final class NowPlayingCard extends LinearLayout {
     /** Playing on another device (e.g. Spotify Connect to a phone): don't take over the TV. */
     private boolean isRemote() {
         MediaController.PlaybackInfo pi = controller != null ? controller.getPlaybackInfo() : null;
-        return pi != null && pi.getPlaybackType() == MediaController.PlaybackInfo.PLAYBACK_TYPE_REMOTE;
+        // Some TV apps (Spotify) label their session remote even when playing here, so only treat
+        // it as elsewhere if the TV itself is silent.
+        boolean remote = pi != null && pi.getPlaybackType() == MediaController.PlaybackInfo.PLAYBACK_TYPE_REMOTE;
+        return remote && !getContext().getSystemService(android.media.AudioManager.class).isMusicActive();
     }
 
     /** ✕: hide the card for this playback. */

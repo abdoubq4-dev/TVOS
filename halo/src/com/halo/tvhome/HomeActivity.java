@@ -423,6 +423,16 @@ public class HomeActivity extends Activity
         return ROTATE_MS[Math.max(0, Math.min(ROTATE_MS.length - 1, prefs.getInt("wallpaper_rotate", 0)))];
     }
 
+    /** "Every Hour · next in 34 min" (or just "Off"). */
+    private String rotationStatus() {
+        String label = ROTATE_LABELS[prefs.getInt("wallpaper_rotate", 0)];
+        long every = rotateMs();
+        if (every == 0) return label;
+        long due = prefs.getLong("wallpaper_rotated_at", System.currentTimeMillis()) + every - System.currentTimeMillis();
+        long min = Math.max(1, (due + 59_999) / 60_000);
+        return label + " · next in " + (min >= 120 ? (min / 60) + " hr" : min + " min");
+    }
+
     private void scheduleRotation() {
         ui.removeCallbacks(rotateTick);
         long every = rotateMs();
@@ -929,7 +939,7 @@ public class HomeActivity extends Activity
         d.header(R.drawable.ic_home, "Home Screen", null);
         d.row(R.drawable.ic_photo, "Wallpaper", prettyWallpaper(), then(this::showWallpapers));
         d.row(R.drawable.ic_photo, "Wallpaper Style", clearStyle() ? "Clear" : "Soft", then(this::showWallpaperStyle));
-        d.row(R.drawable.ic_timer, "Rotate Wallpapers", ROTATE_LABELS[prefs.getInt("wallpaper_rotate", 0)],
+        d.row(R.drawable.ic_timer, "Rotate Wallpapers", rotationStatus(),
                 then(this::showRotation));
         d.row(R.drawable.ic_photo, "Art Mode", null,
                 then(() -> Actions.start(this, new Intent(this, ArtModeActivity.class))));
