@@ -792,7 +792,9 @@ public class HomeActivity extends Activity
             View cur = getCurrentFocus();
             if (dir != 0 && cur != null) {
                 View next = cur.focusSearch(dir);
-                if (next == null || (sidebar.isOpen() && !isInside(next, sidebar))
+                // Left at the grid's edge opens the sidebar; it must not hop up to the weather pill.
+                if (next == null || (dir == View.FOCUS_LEFT && next == weather && cur != weather)
+                        || (sidebar.isOpen() && !isInside(next, sidebar))
                         || (dropdown.isOpen() && !isInside(next, dropdown))) {
                     if (sidebar.isOpen()) {
                         if (dir == View.FOCUS_RIGHT) sidebar.close();

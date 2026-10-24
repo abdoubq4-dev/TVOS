@@ -31,11 +31,13 @@ puts everything back.
 | | |
 |---|---|
 | ![Now Playing](docs/screenshots/now-playing.jpg) | ![Control Center](docs/screenshots/control-center.jpg) |
-| **Now Playing**: the song's artwork becomes the backdrop; controls appear when you select the card. | **Control Center**: Power Off, Wi-Fi, Do Not Disturb, Audio and Sleep Timer as floating glass. |
+| **Now Playing**: the song's artwork becomes the backdrop. Select the card for previous, play/pause, next and a dismiss ✕. | **Control Center**: Power Off, Wi-Fi, Do Not Disturb, Audio and Sleep Timer as floating glass. |
+| ![Weather](docs/screenshots/weather.jpg) | ![Home panel](docs/screenshots/home-panel.jpg) |
+| **Weather**: open the pill for current conditions, the next six hours, five days with range bars and a details line. | **Home panel**: wallpaper, clear/soft style, timed rotation, Art Mode and hidden apps. |
 | ![Sidebar](docs/screenshots/sidebar.jpg) | ![App menu](docs/screenshots/app-menu.jpg) |
-| **Sidebar**: profile, system destinations and apps. | **App menu** (hold OK): Move, Close App, Hide, App Info, Delete. |
+| **Sidebar**: profile, system destinations and your first apps. | **App menu** (hold OK): Move, Close App, Hide, App Info, Delete. |
 | ![App grid](docs/screenshots/app-grid.jpg) | ![Art Mode](docs/screenshots/art-mode.jpg) |
-| **App grid**: six 5:3 icons per row on a frosted dock. | **Art Mode**: full-screen paintings, also used as a screensaver. |
+| **App grid**: six 5:3 icons per row on a frosted dock. | **Art Mode**: full-screen public-domain paintings, also usable as the screensaver. |
 
 ## Features
 
