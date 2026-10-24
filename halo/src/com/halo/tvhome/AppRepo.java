@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.provider.Settings;
 
@@ -105,6 +106,17 @@ final class AppRepo {
         return out;
     }
 
+    /** A tile image pushed by set-icon.sh to files/icons/<package>.png replaces the app's own. */
+    private Bitmap customIcon(String pkg) {
+        java.io.File f = new java.io.File(ctx.getExternalFilesDir("icons"), pkg + ".png");
+        if (!f.canRead()) return null;
+        Bitmap src = android.graphics.BitmapFactory.decodeFile(f.getPath());
+        if (src == null) return null;
+        Bitmap out = Bitmap.createScaledBitmap(src, artW, artH, true);
+        if (out != src) src.recycle();
+        return out.isMutable() ? out : out.copy(Bitmap.Config.ARGB_8888, true);
+    }
+
     private static int indexOf(List<AppEntry> list, String pkg) {
         for (int i = 0; i < list.size(); i++) if (list.get(i).pkg.equals(pkg)) return i;
         return -1;
@@ -127,7 +139,10 @@ final class AppRepo {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
         AppEntry e = new AppEntry(key, pkg, label, i);
         try {
-            if (SETTINGS_PKG.equals(pkg)) {
+            Bitmap custom = customIcon(pkg);
+            if (custom != null) {
+                e.art = custom;
+            } else if (SETTINGS_PKG.equals(pkg)) {
                 e.art = Art.settingsArt(ctx, artW, artH);
             } else {
                 Drawable banner = ri.activityInfo.loadBanner(pm);

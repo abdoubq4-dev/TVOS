@@ -108,7 +108,10 @@ final class ControlBar extends LinearLayout {
     void setExpandedTimeX(float screenX) {
         int[] loc = new int[2];
         time.getLocationOnScreen(loc);
-        timeShift = screenX - (loc[0] - time.getTranslationX());
+        // Measure against the bar's fully opened layout: the bar is right-aligned, so opening the
+        // icons pushes the time left by however much they still have to grow.
+        float growth = expanded ? 0 : iconsWidth() - icons.getLayoutParams().width;
+        timeShift = screenX - (loc[0] - time.getTranslationX() - growth);
     }
 
     void setExpanded(boolean e) {

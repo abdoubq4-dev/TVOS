@@ -36,7 +36,7 @@ final class Dropdown extends FrameLayout {
         card.setClipChildren(false);
         card.setClipToPadding(false);
         LayoutParams lp = new LayoutParams(Ui.dp(WIDTH), LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.END);
-        lp.topMargin = Ui.dp(28 + ControlBar.HEIGHT + 8);
+        lp.topMargin = Ui.dp(28 + ControlBar.HEIGHT + 10);
         lp.rightMargin = Ui.dp(28);
         addView(card, lp);
         setVisibility(GONE);
@@ -144,9 +144,9 @@ final class Dropdown extends FrameLayout {
      * tvOS 26 Control Center: no panel behind it; every control is its own floating piece of
      * glass. Power Off is a rounded square, the wide controls are capsules, the shortcuts circles.
      */
-    static final int CC_UNIT = 56, CC_GAP = 12;
+    static final int CC_UNIT = 48, CC_GAP = 10;
     static final int CC_WIDTH = 4 * CC_UNIT + 3 * CC_GAP;
-    private static final float CC_RADIUS = 26;
+    private static final float CC_RADIUS = 22;
     private GridLayout ccGrid;
 
     Dropdown ccGrid() {
@@ -217,8 +217,8 @@ final class Dropdown extends FrameLayout {
         LinearLayout t = (LinearLayout) ccTile(row, col, 2, 2, click);
         t.setOrientation(LinearLayout.VERTICAL);
         t.setGravity(Gravity.CENTER);
-        t.addView(ccIcon(icon, 46, Glass.ON_GLASS));
-        TextView l = text(12.5f, 640, 0);
+        t.addView(ccIcon(icon, 38, Glass.ON_GLASS));
+        TextView l = text(11, 640, 0);
         l.setTextColor(Glass.ON_GLASS);
         l.setDuplicateParentStateEnabled(true);
         l.setText(label);
@@ -232,19 +232,19 @@ final class Dropdown extends FrameLayout {
     TextView ccWide(int row, int col, int icon, int iconTint, String title, String status, Runnable click) {
         LinearLayout t = (LinearLayout) ccTile(row, col, 1, 2, click);
         t.setGravity(Gravity.CENTER_VERTICAL);
-        t.setPadding(Ui.dp(16), 0, Ui.dp(12), 0);
+        t.setPadding(Ui.dp(14), 0, Ui.dp(10), 0);
         // White icons turn dark on the white focused tile; coloured ones keep their colour.
         int focusedTint = iconTint;
-        t.addView(ccIcon(icon, 24, new android.content.res.ColorStateList(
+        t.addView(ccIcon(icon, 20, new android.content.res.ColorStateList(
                 new int[][] {new int[] {android.R.attr.state_focused}, new int[] {}},
                 new int[] {focusedTint, iconTint})));
         LinearLayout col2 = new LinearLayout(getContext());
         col2.setOrientation(LinearLayout.VERTICAL);
         col2.setDuplicateParentStateEnabled(true);
         LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(0, -2, 1f);
-        cl.leftMargin = Ui.dp(11);
+        cl.leftMargin = Ui.dp(9);
         t.addView(col2, cl);
-        TextView a = text(12, 640, 0);
+        TextView a = text(11, 640, 0);
         a.setTextColor(Glass.ON_GLASS);
         a.setDuplicateParentStateEnabled(true);
         a.setText(title);
@@ -254,7 +254,7 @@ final class Dropdown extends FrameLayout {
         }
         col2.addView(a);
         if (status == null) return a;
-        TextView b = text(10.5f, 500, 0);
+        TextView b = text(9.5f, 500, 0);
         b.setTextColor(new android.content.res.ColorStateList(
                 new int[][] {new int[] {android.R.attr.state_focused}, new int[] {}},
                 new int[] {0xB3FFFFFF, 0x99FFFFFF}));
@@ -269,7 +269,7 @@ final class Dropdown extends FrameLayout {
     Dropdown ccSmall(int row, int col, int icon, Runnable click) {
         LinearLayout t = (LinearLayout) ccTile(row, col, 1, 1, click);
         t.setGravity(Gravity.CENTER);
-        t.addView(ccIcon(icon, 22, Glass.ON_GLASS));
+        t.addView(ccIcon(icon, 19, Glass.ON_GLASS));
         return this;
     }
 
