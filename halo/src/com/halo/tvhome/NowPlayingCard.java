@@ -58,6 +58,7 @@ final class NowPlayingCard extends LinearLayout {
     private final Progress bar;
     private final ImageView playIcon;
     private MediaController controller;
+    private android.media.session.MediaSession.Token dismissed;
     private LinearLayout controls, info;
     /** The playhead time: hidden at rest, shown with the controls. */
     private FrameLayout timeRow;
@@ -69,6 +70,7 @@ final class NowPlayingCard extends LinearLayout {
         @Override public void onPlaybackStateChanged(PlaybackState s) { refresh(); }
         @Override public void onMetadataChanged(MediaMetadata m) { refresh(); }
         @Override public void onSessionDestroyed() { pick(null); }
+        @Override public void onAudioInfoChanged(MediaController.PlaybackInfo info) { refresh(); }
     };
     private final MediaSessionManager.OnActiveSessionsChangedListener sessions = this::pick;
     private final Runnable tick = new Runnable() {
@@ -165,6 +167,8 @@ final class NowPlayingCard extends LinearLayout {
         playIcon = (ImageView) ((FrameLayout) play).getChildAt(0);
         buttons.addView(play);
         buttons.addView(circle(c, R.drawable.ic_next, v -> controls(2)));
+        buttons.addView(new View(c), new LayoutParams(Ui.dp(14), 1));
+        buttons.addView(circle(c, R.drawable.ic_x, v -> dismiss()));
         open = label(c, 12, 600, 0);
         open.setTextColor(Glass.FG_DIM);
         open.setBackground(Glass.button(16, 0x29FFFFFF));
@@ -354,13 +358,31 @@ final class NowPlayingCard extends LinearLayout {
         refresh();
     }
 
+    /** Playing on another device (e.g. Spotify Connect to a phone): don't take over the TV. */
+    private boolean isRemote() {
+        MediaController.PlaybackInfo pi = controller != null ? controller.getPlaybackInfo() : null;
+        return pi != null && pi.getPlaybackType() == MediaController.PlaybackInfo.PLAYBACK_TYPE_REMOTE;
+    }
+
+    /** ✕: hide the card for this playback. */
+    void dismiss() {
+        if (controller == null) return;
+        dismissed = controller.getSessionToken();
+        refresh();
+    }
+
     private void refresh() {
         MediaMetadata m = controller != null ? controller.getMetadata() : null;
         CharSequence t = m != null ? m.getText(MediaMetadata.METADATA_KEY_TITLE) : null;
         PlaybackState st = controller != null ? controller.getPlaybackState() : null;
         boolean active = st != null && st.getState() != PlaybackState.STATE_STOPPED
                 && st.getState() != PlaybackState.STATE_NONE && st.getState() != PlaybackState.STATE_ERROR;
-        boolean show = !TextUtils.isEmpty(t) && active;
+        // Clear a dismissal once that playback pauses/stops, so playing it again brings it back.
+        boolean playing = st != null && st.getState() == PlaybackState.STATE_PLAYING;
+        if (dismissed != null && (controller == null || !controller.getSessionToken().equals(dismissed) || !playing)) {
+            dismissed = null;
+        }
+        boolean show = !TextUtils.isEmpty(t) && active && !isRemote() && dismissed == null;
         if (show) {
             String app = appLabel(controller.getPackageName());
             source.setText((app + "  ·  NOW PLAYING").toUpperCase());
