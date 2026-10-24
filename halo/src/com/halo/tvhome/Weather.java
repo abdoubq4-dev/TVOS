@@ -28,6 +28,16 @@ final class Weather {
         }
 
         String condition() {
+            return conditionFor(code, day);
+        }
+
+        int icon() {
+            return iconFor(code, day);
+        }
+    }
+
+    static String conditionFor(int code, boolean day) {
+        {
             if (code == 0) return day ? "Sunny" : "Clear";
             if (code == 1) return day ? "Mostly Sunny" : "Mostly Clear";
             if (code == 2) return "Partly Cloudy";
@@ -41,8 +51,10 @@ final class Weather {
             if (code >= 95) return "Thunderstorms";
             return "";
         }
+    }
 
-        int icon() {
+    static int iconFor(int code, boolean day) {
+        {
             if (code <= 1) return day ? R.drawable.ic_w_sun : R.drawable.ic_moon;
             if (code <= 3) return R.drawable.ic_w_cloud;
             if (code == 45 || code == 48) return R.drawable.ic_w_fog;
@@ -50,6 +62,26 @@ final class Weather {
             if (code >= 95) return R.drawable.ic_w_storm;
             return R.drawable.ic_w_rain;
         }
+    }
+
+    /** The full forecast saved by the last successful fetch, or null. */
+    static JSONObject cachedFull(Context c) {
+        String s = c.getSharedPreferences("halo", 0).getString("wx_full", null);
+        try {
+            return s == null ? null : new JSONObject(s);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    static String city(Context c) {
+        SharedPreferences p = c.getSharedPreferences("halo", 0);
+        String city = p.getString("weather_city", p.getString("wx_city", null));
+        if (city == null) {
+            String id = TimeZone.getDefault().getID();
+            city = id.substring(id.lastIndexOf('/') + 1).replace('_', ' ');
+        }
+        return city;
     }
 
     private static final long FRESH_MS = 25 * 60 * 1000;
@@ -74,14 +106,20 @@ final class Weather {
                     String id = TimeZone.getDefault().getID();
                     city = id.substring(id.lastIndexOf('/') + 1).replace('_', ' ');
                 }
+                p.edit().putString("wx_city", city).apply();
                 JSONObject g = get("https://geocoding-api.open-meteo.com/v1/search?count=1&format=json&name="
                         + URLEncoder.encode(city, "UTF-8"));
                 JSONObject r = g.getJSONArray("results").getJSONObject(0);
                 p.edit().putFloat("wx_lat", (float) r.getDouble("latitude"))
                         .putFloat("wx_lon", (float) r.getDouble("longitude")).apply();
             }
-            JSONObject f = get("https://api.open-meteo.com/v1/forecast?current=temperature_2m,weather_code,is_day"
-                    + "&timezone=auto&latitude=" + p.getFloat("wx_lat", 0) + "&longitude=" + p.getFloat("wx_lon", 0));
+            JSONObject f = get("https://api.open-meteo.com/v1/forecast"
+                    + "?current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,is_day"
+                    + "&hourly=temperature_2m,weather_code,precipitation_probability,is_day"
+                    + "&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,"
+                    + "precipitation_probability_max,uv_index_max"
+                    + "&forecast_days=6&timezone=auto&latitude=" + p.getFloat("wx_lat", 0) + "&longitude=" + p.getFloat("wx_lon", 0));
+            p.edit().putString("wx_full", f.toString()).apply();
             JSONObject cur = f.getJSONObject("current");
             Now n = new Now((int) Math.round(cur.getDouble("temperature_2m")), cur.getInt("weather_code"),
                     cur.getInt("is_day") == 1);

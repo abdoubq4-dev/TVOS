@@ -72,6 +72,7 @@ public class HomeActivity extends Activity
     private Sidebar sidebar;
     private MenuOverlay menu;
     private AppMenu appMenu;
+    private WeatherPanel weatherPanel;
     /** Package last opened from Halo: Android protects it as the "previous" app. */
     private String lastLaunched;
 
@@ -158,6 +159,7 @@ public class HomeActivity extends Activity
         // Home pressed while already home: close everything and go back to the top, like tvOS.
         menu.hide(false);
         appMenu.hide();
+        weatherPanel.hide();
         dropdown.hide();
         sidebar.close();
         if (moving != null) endMove();
@@ -227,6 +229,16 @@ public class HomeActivity extends Activity
         wt.leftMargin = Ui.dp(6);
         weather.addView(weatherTemp, wt);
         weather.setVisibility(View.INVISIBLE);
+        // Selectable: lifts with a lit-glass highlight; OK opens the forecast.
+        weather.setFocusable(true);
+        android.graphics.drawable.StateListDrawable wf = new android.graphics.drawable.StateListDrawable();
+        wf.addState(new int[] {android.R.attr.state_focused}, Glass.glassLit(ControlBar.HEIGHT / 2f));
+        wf.setEnterFadeDuration(120);
+        wf.setExitFadeDuration(120);
+        weather.setForeground(wf);
+        weather.setOnFocusChangeListener((v, f) -> v.animate().scaleX(f ? 1.08f : 1f).scaleY(f ? 1.08f : 1f)
+                .setDuration(300).setInterpolator(Spring.FOCUS).start());
+        weather.setOnClickListener(v -> openWeather());
         FrameLayout.LayoutParams wlp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
                 Ui.dp(ControlBar.HEIGHT), Gravity.TOP | Gravity.START);
         wlp.topMargin = Ui.dp(28);
@@ -255,6 +267,8 @@ public class HomeActivity extends Activity
         root.addView(menu, match());
         appMenu = new AppMenu(this);
         root.addView(appMenu, match());
+        weatherPanel = new WeatherPanel(this);
+        root.addView(weatherPanel, match());
 
         root.getViewTreeObserver().addOnGlobalFocusChangeListener((oldV, newV) -> {
             boolean inBar = newV != null && (isInside(newV, controlBar) || dropdown.isOpen());
@@ -305,13 +319,41 @@ public class HomeActivity extends Activity
     }
 
     private void refreshWeather() {
-        if (Weather.fresh(this) && Weather.cached(this) != null) {
+        if (Weather.fresh(this) && Weather.cached(this) != null && Weather.cachedFull(this) != null) {
             showWeather(Weather.cached(this));
             return;
         }
         worker.execute(() -> {
             Weather.Now n = Weather.fetch(this);
             if (n != null) ui.post(() -> showWeather(n));
+        });
+    }
+
+    /** Left from the first capsule button reaches the weather pill, and right comes back. */
+    private void linkWeather() {
+        if (weather.getId() == View.NO_ID) weather.setId(View.generateViewId());
+        View first = null;
+        for (View b : controlBar.buttons) {
+            if (b == null) continue;
+            if (b.getId() == View.NO_ID) b.setId(View.generateViewId());
+            if (b.getVisibility() == View.VISIBLE && b.isShown() && (first == null || b.getLeft() + ((View) b.getParent()).getLeft() < first.getLeft() + ((View) first.getParent()).getLeft())) first = b;
+        }
+        if (first == null) return;
+        first.setNextFocusLeftId(weather.getId());
+        weather.setNextFocusRightId(first.getId());
+    }
+
+    private void openWeather() {
+        org.json.JSONObject f = Weather.cachedFull(this);
+        if (f == null) {
+            Toast.makeText(this, "Loading weather…", Toast.LENGTH_SHORT).show();
+            refreshWeather();
+            return;
+        }
+        setMainFocus(false);
+        weatherPanel.show(f, Weather.city(this), snapshotBlurred(), () -> {
+            setMainFocus(true);
+            weather.requestFocus();
         });
     }
 
@@ -565,7 +607,7 @@ public class HomeActivity extends Activity
     }
 
     private boolean anyOverlayOpen() {
-        return menu.isOpen() || dropdown.isOpen() || sidebar.isOpen() || appMenu.isOpen();
+        return menu.isOpen() || dropdown.isOpen() || sidebar.isOpen() || appMenu.isOpen() || weatherPanel.isOpen();
     }
 
     /** Blocks the grid, Now Playing and the capsule while a panel owns focus. */
@@ -693,6 +735,49 @@ public class HomeActivity extends Activity
             }
             return true;
         }
+        // Top bar: step explicitly through weather ↔ capsule buttons (they may still be mid-
+        // expansion, with zero width, so focus search can't find them).
+        if (e.getAction() == KeyEvent.ACTION_DOWN && !anyOverlayOpen() && moving == null) {
+            int dir = direction(e.getKeyCode());
+            View cur = getCurrentFocus();
+            if ((dir == View.FOCUS_LEFT || dir == View.FOCUS_RIGHT) && cur != null
+                    && (cur == weather || isInside(cur, controlBar))) {
+                List<View> bar = new ArrayList<>();
+                if (weather.getVisibility() == View.VISIBLE) bar.add(weather);
+                for (int b : new int[] {ControlBar.AUDIO, ControlBar.HEADPHONES, ControlBar.HOME,
+                        ControlBar.CONTROLS, ControlBar.PROFILE}) {
+                    View v = controlBar.buttons[b];
+                    if (v != null && v.getVisibility() == View.VISIBLE) bar.add(v);
+                }
+                int i = bar.indexOf(cur) + (dir == View.FOCUS_LEFT ? -1 : 1);
+                if (i < 0) openSidebar(cur);
+                else if (i < bar.size()) {
+                    controlBar.setExpanded(true);
+                    bar.get(i).requestFocus();
+                }
+                return true;
+            }
+            // Up to the top row goes to whichever side is nearer: the weather pill on the left
+            // half of the screen, the top-right capsule on the right half.
+            if (dir == View.FOCUS_UP && cur != null && weather.getVisibility() == View.VISIBLE
+                    && (isInside(cur, nowPlaying) || (cur instanceof AppTile && grid.tiles.indexOf(cur) >= 0
+                        && grid.tiles.indexOf(cur) < GridPanel.COLS && !nowPlaying.hasMedia()))) {
+                int[] l = new int[2];
+                cur.getLocationOnScreen(l);
+                boolean leftSide = l[0] + cur.getWidth() / 2 < getResources().getDisplayMetrics().widthPixels / 2;
+                if (leftSide) weather.requestFocus();
+                else controlBar.buttons[ControlBar.PROFILE].requestFocus();
+                return true;
+            }
+            if (dir == View.FOCUS_DOWN && cur == weather) {
+                if (nowPlaying.hasMedia()) nowPlaying.requestFocus(); else focusFirst();
+                return true;
+            }
+        }
+        if (weatherPanel.isOpen() && direction(e.getKeyCode()) != 0) {
+            if (e.getAction() == KeyEvent.ACTION_DOWN && e.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN) weatherPanel.hide();
+            return true;
+        }
         if (e.getAction() == KeyEvent.ACTION_DOWN && (menu.isOpen() || appMenu.isOpen())) {
             int dir = direction(e.getKeyCode());
             View cur = getCurrentFocus();
@@ -750,7 +835,8 @@ public class HomeActivity extends Activity
 
     @Override
     public void onBackPressed() {
-        if (appMenu.isOpen()) appMenu.hide();
+        if (weatherPanel.isOpen()) weatherPanel.hide();
+        else if (appMenu.isOpen()) appMenu.hide();
         else if (menu.isOpen()) menu.hide(true);
         else if (dropdown.isOpen()) dropdown.hide();
         else if (sidebar.isOpen()) sidebar.close();
@@ -885,8 +971,11 @@ public class HomeActivity extends Activity
 
     /** Now playing: track, transport and volume, laid out as even tile rows. */
     private void buildAudio(Dropdown d) {
-        if (nowPlaying.hasMedia()) {
+        if (nowPlaying.hasSession()) {
             d.header(R.drawable.ic_music, nowPlaying.title(), nowPlaying.subtitle());
+            if (!nowPlaying.hasMedia()) {
+                d.row(R.drawable.ic_home, "Show on Home Screen", null, then(nowPlaying::showOnHome));
+            }
             d.tiles(new int[] {R.drawable.ic_prev, nowPlaying.isPlaying() ? R.drawable.ic_pause : R.drawable.ic_play,
                             R.drawable.ic_next},
                     new String[] {null, null, null},
@@ -931,7 +1020,8 @@ public class HomeActivity extends Activity
     }
 
     private void refreshCapsule() {
-        controlBar.setContext(nowPlaying.hasMedia(), headphoneName() != null);
+        controlBar.setContext(nowPlaying.hasSession(), headphoneName() != null);
+        linkWeather();
     }
 
     /** Home: the home screen itself — wallpaper, Art Mode, hidden apps, layout. */

@@ -58,7 +58,23 @@ final class NowPlayingCard extends LinearLayout {
     private final Progress bar;
     private final ImageView playIcon;
     private MediaController controller;
-    private android.media.session.MediaSession.Token dismissed;
+    private android.media.session.MediaSession.Token dismissed, forced;
+    private boolean sessionAvailable;
+    private int polls;
+    private String lastSeen;
+
+    private void poll() {
+        try {
+            if (started) pick(msm.getActiveSessions(listenerName));
+        } catch (SecurityException ignored) {
+        }
+        MediaMetadata m = controller != null ? controller.getMetadata() : null;
+        String seen = m == null ? null : m.getString(MediaMetadata.METADATA_KEY_TITLE) + "|" + m.getString(MediaMetadata.METADATA_KEY_ARTIST);
+        if (seen == null ? lastSeen != null : !seen.equals(lastSeen)) {
+            lastSeen = seen;
+            refresh();
+        }
+    }
     private LinearLayout controls, info;
     /** The playhead time: hidden at rest, shown with the controls. */
     private FrameLayout timeRow;
@@ -77,6 +93,9 @@ final class NowPlayingCard extends LinearLayout {
         @Override
         public void run() {
             updateProgress();
+            // Players can skip change callbacks while backgrounded; also re-check the track
+            // (and which session is active) once a second.
+            if (++polls % 2 == 0) poll();
             handler.postDelayed(this, 500);
         }
     };
@@ -167,7 +186,6 @@ final class NowPlayingCard extends LinearLayout {
         playIcon = (ImageView) ((FrameLayout) play).getChildAt(0);
         buttons.addView(play);
         buttons.addView(circle(c, R.drawable.ic_next, v -> controls(2)));
-        buttons.addView(new View(c), new LayoutParams(Ui.dp(14), 1));
         buttons.addView(circle(c, R.drawable.ic_x, v -> dismiss()));
         open = label(c, 12, 600, 0);
         open.setTextColor(Glass.FG_DIM);
@@ -371,6 +389,20 @@ final class NowPlayingCard extends LinearLayout {
     void dismiss() {
         if (controller == null) return;
         dismissed = controller.getSessionToken();
+        forced = null;
+        refresh();
+    }
+
+    /** Something is playing (here or on another device), whether or not the card shows. */
+    boolean hasSession() {
+        return sessionAvailable;
+    }
+
+    /** Brings playback from another device (or a dismissed card) onto the home screen. */
+    void showOnHome() {
+        if (controller == null) return;
+        dismissed = null;
+        forced = controller.getSessionToken();
         refresh();
     }
 
@@ -385,7 +417,11 @@ final class NowPlayingCard extends LinearLayout {
         if (dismissed != null && (controller == null || !controller.getSessionToken().equals(dismissed) || !playing)) {
             dismissed = null;
         }
-        boolean show = !TextUtils.isEmpty(t) && active && !isRemote() && dismissed == null;
+        boolean hasSession = !TextUtils.isEmpty(t) && active;
+        if (forced != null && (controller == null || !controller.getSessionToken().equals(forced))) forced = null;
+        boolean onHome = !isRemote() || forced != null;
+        sessionAvailable = hasSession;
+        boolean show = hasSession && onHome && dismissed == null;
         if (show) {
             String app = appLabel(controller.getPackageName());
             source.setText((app + "  ·  NOW PLAYING").toUpperCase());
