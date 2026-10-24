@@ -188,8 +188,10 @@ public class HomeActivity extends Activity
         nowPlaying = new NowPlayingCard(this, this);
         FrameLayout.LayoutParams nlp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT);
-        nlp.leftMargin = Ui.dp(48);
-        nlp.topMargin = Ui.dp(394 - 24 - NowPlayingCard.ART);
+        // Artwork lines up with the first dock icon, and sits the dock's own 19dp inner gap above it.
+        float screenDp = getResources().getDisplayMetrics().widthPixels / Ui.density;
+        nlp.leftMargin = Ui.dp(GridPanel.firstIconLeftDp(screenDp));
+        nlp.topMargin = Ui.dp(GridPanel.DOCK_TOP_DP - 19 - NowPlayingCard.ART);
         content.addView(nowPlaying, nlp);
 
         grid = new GridPanel(this);

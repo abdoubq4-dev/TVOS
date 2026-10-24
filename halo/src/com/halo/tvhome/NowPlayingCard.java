@@ -40,7 +40,13 @@ final class NowPlayingCard extends LinearLayout {
         void onArtwork(Bitmap art);
     }
 
-    static final int ART = 150, COL = 400, CONTROLS_H = 32, CONTROLS_GAP = 12;
+    /** Apple-proportioned artwork: about as tall as the text block, corners ~8% of the size. */
+    static final int ART = 128, ART_RADIUS = 10, COL = 400, CONTROLS_H = 32, CONTROLS_GAP = 12;
+    /**
+     * Resting offset: drops the details so the scrubber track's bottom lines up with the
+     * artwork's bottom. Covers the hidden controls and time row, plus the space below the track.
+     */
+    private static final float REST_DROP = CONTROLS_H + CONTROLS_GAP + 15 + 3 + 5;
 
     private final MediaSessionManager msm;
     private final ComponentName listenerName;
@@ -88,7 +94,7 @@ final class NowPlayingCard extends LinearLayout {
         art.setOutlineProvider(new ViewOutlineProvider() {
             @Override
             public void getOutline(View v, Outline o) {
-                o.setRoundRect(0, 0, v.getWidth(), v.getHeight(), Ui.dp(12));
+                o.setRoundRect(0, 0, v.getWidth(), v.getHeight(), Ui.dp(ART_RADIUS));
             }
         });
         art.setClipToOutline(true);
@@ -174,7 +180,7 @@ final class NowPlayingCard extends LinearLayout {
         // Transport controls stay hidden until focus moves onto the card, as on tvOS.
         controls.setAlpha(0f);
         timeRow.setAlpha(0f);
-        info.setTranslationY(Ui.dp(CONTROLS_H + CONTROLS_GAP));
+        info.setTranslationY(Ui.dp(REST_DROP));
         getViewTreeObserver().addOnGlobalFocusChangeListener((o, n) -> showControls(n != null && contains(n)));
         setVisibility(GONE);
     }
@@ -216,7 +222,7 @@ final class NowPlayingCard extends LinearLayout {
         controlsShown = show;
         controls.animate().cancel();
         info.animate().cancel();
-        info.animate().translationY(show ? 0 : Ui.dp(CONTROLS_H + CONTROLS_GAP)).setStartDelay(show ? 0 : 120)
+        info.animate().translationY(show ? 0 : Ui.dp(REST_DROP)).setStartDelay(show ? 0 : 120)
                 .setDuration(show ? 520 : 460).setInterpolator(SMOOTH).start();
         timeRow.animate().cancel();
         timeRow.animate().alpha(show ? 1f : 0f).setStartDelay(show ? 120 : 0)

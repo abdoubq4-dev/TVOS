@@ -30,6 +30,14 @@ final class GridPanel extends ViewGroup {
     final int top = Ui.dp(413);
     private int left;
     final FrostDock dock;
+
+    /** Left edge of the first icon, in dp, for a screen this many dp wide. */
+    static float firstIconLeftDp(float screenDp) {
+        return (screenDp - (COLS * TILE_W + (COLS - 1) * 25)) / 2f;
+    }
+
+    /** Top edge of the dock, in dp. */
+    static final float DOCK_TOP_DP = 413 - 19;
     /** Concentric with a focused icon's corners: its scaled radius plus the even gap. */
     static final float DOCK_RADIUS = TILE_RADIUS * FOCUS_SCALE + FOCUS_GAP;
     final List<AppTile> tiles = new ArrayList<>();
