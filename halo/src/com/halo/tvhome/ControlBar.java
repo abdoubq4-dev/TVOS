@@ -102,16 +102,21 @@ final class ControlBar extends LinearLayout {
      * Control Center below, and each button stands alone with its own focus highlight.
      */
     private ValueAnimator dissolve;
-    private float timeShift;
 
-    /** Screen x (px) the time should move to when expanded. */
-    void setExpandedTimeX(float screenX) {
-        int[] loc = new int[2];
-        time.getLocationOnScreen(loc);
-        // Measure against the bar's fully opened layout: the bar is right-aligned, so opening the
-        // icons pushes the time left by however much they still have to grow.
-        float growth = expanded ? 0 : iconsWidth() - icons.getLayoutParams().width;
-        timeShift = screenX - (loc[0] - time.getTranslationX() - growth);
+    /** Long, soft ease-out: the time glides rather than snaps. */
+    private static final android.view.animation.PathInterpolator GLIDE =
+            new android.view.animation.PathInterpolator(0.22f, 0.9f, 0.3f, 1f);
+
+    /** Slides the time to screen x (px) while a panel is open, or back home. */
+    void slideTime(boolean open, float screenX) {
+        float shift = 0;
+        if (open) {
+            int[] loc = new int[2];
+            time.getLocationOnScreen(loc);
+            shift = screenX - (loc[0] - time.getTranslationX());
+        }
+        time.animate().cancel();
+        time.animate().translationX(shift).setDuration(open ? 460 : 380).setInterpolator(GLIDE).start();
     }
 
     void setExpanded(boolean e) {
@@ -141,15 +146,7 @@ final class ControlBar extends LinearLayout {
         });
         anim.start();
         icons.animate().alpha(e ? 1f : 0f).setStartDelay(e ? 80 : 0).setDuration(e ? 220 : 120).start();
-        // Time slides left after the icons have opened (their width changes where it starts).
-        if (e) {
-            postDelayed(() -> {
-                if (!expanded) return;
-                time.animate().translationX(timeShift).setDuration(380).setInterpolator(Spring.PANEL).start();
-            }, 0);
-        } else {
-            time.animate().translationX(0).setDuration(300).setInterpolator(Spring.PANEL).start();
-        }
+        if (!e) slideTime(false, 0);
     }
 
     private int iconsWidth() {

@@ -18,7 +18,8 @@ final class Dropdown extends FrameLayout {
      * highlights whose corners are concentric with the panel (radius minus inset). Focused items
      * never grow past the inset, so nothing touches or gets clipped at the panel edge.
      */
-    private static final int WIDTH = 290, RADIUS = 24, INSET = 10, GAP = 8, ROW_H = 48;
+    /** Matches Control Center: same width, corner radius and type sizes, so the panels read as one family. */
+    private static final int WIDTH = 4 * 48 + 3 * 10, RADIUS = 22, INSET = 8, GAP = 6, ROW_H = 40;
     private static final float ROW_RADIUS = RADIUS - INSET;
     private final LinearLayout card;
     private Runnable onClose;
@@ -65,21 +66,21 @@ final class Dropdown extends FrameLayout {
 
     Dropdown header(int icon, CharSequence title, CharSequence subtitle) {
         LinearLayout h = line(icon, title, subtitle, 0, false);
-        h.setPadding(Ui.dp(12), Ui.dp(4), Ui.dp(12), Ui.dp(10));
+        h.setPadding(Ui.dp(10), Ui.dp(2), Ui.dp(10), Ui.dp(8));
         card.addView(h);
         View div = new View(getContext());
         div.setBackgroundColor(0x26FFFFFF);
         LinearLayout.LayoutParams dl = new LinearLayout.LayoutParams(-1, Math.max(1, Ui.dp(0.75f)));
-        dl.setMargins(Ui.dp(12), 0, Ui.dp(12), Ui.dp(GAP));
+        dl.setMargins(Ui.dp(10), 0, Ui.dp(10), Ui.dp(GAP));
         card.addView(div, dl);
         return this;
     }
 
     Dropdown section(String text) {
-        TextView t = text(11, 650, 0x99FFFFFF);
+        TextView t = text(9.5f, 650, 0x99FFFFFF);
         t.setText(text.toUpperCase());
         t.setLetterSpacing(0.08f);
-        t.setPadding(Ui.dp(12), Ui.dp(GAP), 0, Ui.dp(GAP / 2f + 2));
+        t.setPadding(Ui.dp(10), Ui.dp(GAP), 0, Ui.dp(GAP / 2f + 2));
         card.addView(t);
         return this;
     }
@@ -117,7 +118,7 @@ final class Dropdown extends FrameLayout {
             iv.setImageResource(icons[i]);
             iv.setImageTintList(Glass.ON_GLASS);
             iv.setDuplicateParentStateEnabled(true);
-            t.addView(iv, new LinearLayout.LayoutParams(Ui.dp(22), Ui.dp(22)));
+            t.addView(iv, new LinearLayout.LayoutParams(Ui.dp(18), Ui.dp(18)));
             if (labels[i] != null) {
                 TextView l = text(10.5f, 600, 0);
                 l.setTextColor(Glass.ON_GLASS);
@@ -329,7 +330,7 @@ final class Dropdown extends FrameLayout {
         LinearLayout r = new LinearLayout(c);
         r.setOrientation(LinearLayout.HORIZONTAL);
         r.setGravity(Gravity.CENTER_VERTICAL);
-        r.setPadding(Ui.dp(12), 0, Ui.dp(12), 0);
+        r.setPadding(Ui.dp(10), 0, Ui.dp(10), 0);
         if (focusable) {
             r.setBackground(Glass.glassButton(ROW_RADIUS, fill));
             r.setFocusable(true);
@@ -341,26 +342,26 @@ final class Dropdown extends FrameLayout {
                 new int[][] {new int[] {android.R.attr.state_focused}, new int[] {}},
                 new int[] {0xFF0A84FF, 0xFF64B5FF}) : android.content.res.ColorStateList.valueOf(0xFFFFFFFF));
         iv.setDuplicateParentStateEnabled(true);
-        r.addView(iv, new LinearLayout.LayoutParams(Ui.dp(22), Ui.dp(22)));
+        r.addView(iv, new LinearLayout.LayoutParams(Ui.dp(18), Ui.dp(18)));
         LinearLayout col = new LinearLayout(c);
         col.setOrientation(LinearLayout.VERTICAL);
         col.setDuplicateParentStateEnabled(true);
         LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(0, -2, 1f);
         cl.leftMargin = Ui.dp(12);
         r.addView(col, cl);
-        TextView t = text(focusable ? 14.5f : 16, 600, 0);
+        TextView t = text(focusable ? 11 : 12.5f, 640, 0);
         t.setTextColor(Glass.ON_GLASS);
         t.setDuplicateParentStateEnabled(true);
         t.setText(title);
         col.addView(t);
         if (!TextUtils.isEmpty(subtitle)) {
-            TextView s = text(12, 480, 0);
+            TextView s = text(9.5f, 500, 0);
             s.setTextColor(new android.content.res.ColorStateList(
                     new int[][] {new int[] {android.R.attr.state_focused}, new int[] {}},
                     new int[] {0xB3FFFFFF, 0x99FFFFFF}));
             s.setDuplicateParentStateEnabled(true);
             s.setText(subtitle);
-            s.setPadding(0, Ui.dp(2), 0, 0);
+            s.setPadding(0, Ui.dp(1.5f), 0, 0);
             col.addView(s);
         }
         return r;

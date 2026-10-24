@@ -260,9 +260,6 @@ public class HomeActivity extends Activity
             boolean inBar = newV != null && (isInside(newV, controlBar) || dropdown.isOpen());
             if (inBar) {
                 refreshCapsule();
-                // Time lines up with Control Center's left edge (the panel is right-aligned).
-                int sw = getResources().getDisplayMetrics().widthPixels;
-                controlBar.setExpandedTimeX(sw - Ui.dp(28) - Ui.dp(Dropdown.CC_WIDTH));
             }
             controlBar.setExpanded(inBar);
             if (newV instanceof AppTile) onTileFocused((AppTile) newV);
@@ -789,7 +786,7 @@ public class HomeActivity extends Activity
 
     @Override
     public void openPanel(int which, View anchor) {
-        Dropdown d = dropdown.begin(snapshotBlurred(), which == ControlBar.CONTROLS ? Dropdown.CC_WIDTH : 290);
+        Dropdown d = dropdown.begin(snapshotBlurred(), Dropdown.CC_WIDTH);
         switch (which) {
             case ControlBar.HOME: buildHome(d); break;
             case ControlBar.AUDIO: buildAudio(d); break;
@@ -798,7 +795,11 @@ public class HomeActivity extends Activity
             default: buildProfile(d);
         }
         setMainFocus(false);
+        // The time slides over to line up with the open panel's left edge, and back on close.
+        int sw = getResources().getDisplayMetrics().widthPixels;
+        controlBar.slideTime(true, sw - Ui.dp(28) - Ui.dp(Dropdown.CC_WIDTH));
         d.show(() -> {
+            controlBar.slideTime(false, 0);
             setMainFocus(true);
             if (!menu.isOpen()) anchor.requestFocus();
         });
