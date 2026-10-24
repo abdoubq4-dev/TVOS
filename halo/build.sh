@@ -2,11 +2,13 @@
 # Builds and signs Halo Home without Gradle: aapt2 -> javac -> d8 -> zipalign -> apksigner.
 set -euo pipefail
 cd "$(dirname "$0")"
-export JAVA_HOME=/opt/homebrew/opt/openjdk@17
-export PATH="$JAVA_HOME/bin:$PATH"
-SDK=/opt/homebrew/share/android-commandlinetools
+# Set ANDROID_SDK (and JAVA_HOME for a JDK 17) if yours live elsewhere.
+if [ -z "${JAVA_HOME:-}" ] && [ -d /opt/homebrew/opt/openjdk@17 ]; then export JAVA_HOME=/opt/homebrew/opt/openjdk@17; fi
+[ -n "${JAVA_HOME:-}" ] && export PATH="$JAVA_HOME/bin:$PATH"
+SDK=${ANDROID_SDK:-${ANDROID_HOME:-/opt/homebrew/share/android-commandlinetools}}
 BT=$SDK/build-tools/34.0.0
 AJ=$SDK/platforms/android-34/android.jar
+for f in "$BT/aapt2" "$AJ"; do [ -e "$f" ] || { echo "Missing $f - install platform 34 + build-tools 34 and set ANDROID_SDK"; exit 1; }; done
 VERSION=${VERSION:-1}
 
 rm -rf build && mkdir -p build/gen build/classes build/dex

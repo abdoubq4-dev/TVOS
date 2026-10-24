@@ -59,7 +59,8 @@ final class NowPlayingCard extends LinearLayout {
     private final ImageView playIcon;
     private MediaController controller;
     private android.media.session.MediaSession.Token dismissed, forced;
-    private boolean sessionAvailable;
+    private boolean sessionAvailable, dismissedWhilePlaying;
+    private CharSequence dismissedTitle;
     private int polls;
     private String lastSeen;
 
@@ -389,6 +390,10 @@ final class NowPlayingCard extends LinearLayout {
     void dismiss() {
         if (controller == null) return;
         dismissed = controller.getSessionToken();
+        MediaMetadata m = controller.getMetadata();
+        dismissedTitle = m != null ? m.getText(MediaMetadata.METADATA_KEY_TITLE) : null;
+        PlaybackState st = controller.getPlaybackState();
+        dismissedWhilePlaying = st != null && st.getState() == PlaybackState.STATE_PLAYING;
         forced = null;
         refresh();
     }
@@ -414,8 +419,13 @@ final class NowPlayingCard extends LinearLayout {
                 && st.getState() != PlaybackState.STATE_NONE && st.getState() != PlaybackState.STATE_ERROR;
         // Clear a dismissal once that playback pauses/stops, so playing it again brings it back.
         boolean playing = st != null && st.getState() == PlaybackState.STATE_PLAYING;
-        if (dismissed != null && (controller == null || !controller.getSessionToken().equals(dismissed) || !playing)) {
-            dismissed = null;
+        // A dismissal lasts until another track or player takes over, or playback starts again
+        // after having been paused.
+        if (dismissed != null) {
+            boolean sameTrack = controller != null && controller.getSessionToken().equals(dismissed)
+                    && TextUtils.equals(t, dismissedTitle);
+            if (!sameTrack || (playing && !dismissedWhilePlaying)) dismissed = null;
+            else if (!playing) dismissedWhilePlaying = false;
         }
         boolean hasSession = !TextUtils.isEmpty(t) && active;
         if (forced != null && (controller == null || !controller.getSessionToken().equals(forced))) forced = null;
