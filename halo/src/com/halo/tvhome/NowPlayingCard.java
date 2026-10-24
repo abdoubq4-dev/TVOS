@@ -53,6 +53,8 @@ final class NowPlayingCard extends LinearLayout {
     private final ImageView playIcon;
     private MediaController controller;
     private LinearLayout controls, info;
+    /** The playhead time: hidden at rest, shown with the controls. */
+    private FrameLayout timeRow;
     private Bitmap lastArt;
     private boolean controlsShown;
     private boolean started, shown;
@@ -130,8 +132,8 @@ final class NowPlayingCard extends LinearLayout {
         info.addView(subtitle, margins(0, 5));
 
         bar = new Progress(c);
-        info.addView(bar, new LayoutParams(Ui.dp(COL - 40), Ui.dp(4)) {{ topMargin = Ui.dp(14); }});
-        FrameLayout times = new FrameLayout(c);
+        info.addView(bar, new LayoutParams(Ui.dp(COL - 40), Ui.dp(17)) {{ topMargin = Ui.dp(10); }});
+        FrameLayout times = timeRow = new FrameLayout(c);
         elapsed = label(c, 10, 590, 0x99FFFFFF);
         remaining = label(c, 10, 590, 0x99FFFFFF);
         elapsed.setFontFeatureSettings("'tnum'");
@@ -141,7 +143,11 @@ final class NowPlayingCard extends LinearLayout {
         remaining.setGravity(Gravity.END);
         times.addView(elapsed, new FrameLayout.LayoutParams(Ui.dp(64), Ui.dp(14), Gravity.START));
         times.addView(remaining, new FrameLayout.LayoutParams(Ui.dp(64), Ui.dp(14), Gravity.END));
-        // No elapsed/remaining times: just the progress line, as requested.
+        // Only the elapsed time, riding under the playhead, as in tvOS 26.
+        info.addView(times, new LayoutParams(Ui.dp(COL - 40), Ui.dp(15)) {{ topMargin = Ui.dp(3); }});
+        remaining.setVisibility(GONE);
+        elapsed.setGravity(Gravity.CENTER_HORIZONTAL);
+        elapsed.setTextColor(0xD9FFFFFF);
 
         LinearLayout buttons = controls = new LinearLayout(c);
         buttons.setOrientation(HORIZONTAL);
@@ -167,6 +173,7 @@ final class NowPlayingCard extends LinearLayout {
 
         // Transport controls stay hidden until focus moves onto the card, as on tvOS.
         controls.setAlpha(0f);
+        timeRow.setAlpha(0f);
         info.setTranslationY(Ui.dp(CONTROLS_H + CONTROLS_GAP));
         getViewTreeObserver().addOnGlobalFocusChangeListener((o, n) -> showControls(n != null && contains(n)));
         setVisibility(GONE);
@@ -211,6 +218,9 @@ final class NowPlayingCard extends LinearLayout {
         info.animate().cancel();
         info.animate().translationY(show ? 0 : Ui.dp(CONTROLS_H + CONTROLS_GAP)).setStartDelay(show ? 0 : 120)
                 .setDuration(show ? 520 : 460).setInterpolator(SMOOTH).start();
+        timeRow.animate().cancel();
+        timeRow.animate().alpha(show ? 1f : 0f).setStartDelay(show ? 120 : 0)
+                .setDuration(show ? 360 : 220).setInterpolator(SMOOTH).start();
         controls.animate().alpha(show ? 1f : 0f).translationY(show ? 0 : Ui.dp(10))
                 .setStartDelay(show ? 160 : 0).setDuration(show ? 420 : 260).setInterpolator(SMOOTH).start();
     }
@@ -419,7 +429,9 @@ final class NowPlayingCard extends LinearLayout {
         if (dur > 0) pos = Math.max(0, Math.min(pos, dur));
         bar.setFraction(dur > 0 ? pos / (float) dur : 0f);
         elapsed.setText(time(pos));
-        remaining.setText(dur > 0 ? "−" + time(dur - pos) : "");
+        float lw = elapsed.getWidth() > 0 ? elapsed.getWidth() : Ui.dp(64);
+        float tx = bar.playheadX() - lw / 2;
+        elapsed.setTranslationX(Math.max(0, Math.min(tx, bar.getWidth() - lw)));
     }
 
     private static String time(long ms) {
@@ -464,16 +476,28 @@ final class NowPlayingCard extends LinearLayout {
     }
 
     /** Thin rounded progress track. */
+    /**
+     * tvOS 26 scrubber: a thin glass track (dark tint, hairline rim, lighter played part) with a
+     * short white playhead line standing proud of it.
+     */
     private static final class Progress extends View {
         private final Paint track = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint played = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint rim = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint head = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final RectF r = new RectF();
         private float fraction;
 
         Progress(Context c) {
             super(c);
-            track.setColor(0x59FFFFFF);
-            fill.setColor(0xE6FFFFFF);
+            track.setColor(0x47000000);
+            played.setColor(0x47FFFFFF);
+            rim.setStyle(Paint.Style.STROKE);
+            rim.setStrokeWidth(Math.max(1, Ui.dp(0.5f)));
+            rim.setColor(0x40FFFFFF);
+            head.setColor(0xFFFFFFFF);
+            head.setShadowLayer(Ui.dp(3), 0, 0, 0x66000000);
+            setLayerType(LAYER_TYPE_SOFTWARE, null);  // the playhead's soft shadow
         }
 
         void setFraction(float f) {
@@ -481,13 +505,25 @@ final class NowPlayingCard extends LinearLayout {
             invalidate();
         }
 
+        float playheadX() {
+            float w = getWidth(), pad = Ui.dp(1.5f);
+            return pad + (w - 2 * pad) * fraction;
+        }
+
         @Override
         protected void onDraw(Canvas c) {
-            float h = getHeight(), rad = h / 2;
-            r.set(0, 0, getWidth(), h);
+            float w = getWidth(), h = getHeight(), th = Ui.dp(7), top = (h - th) / 2, rad = th / 2;
+            r.set(0, top, w, top + th);
             c.drawRoundRect(r, rad, rad, track);
-            r.set(0, 0, Math.max(h, getWidth() * fraction), h);
-            c.drawRoundRect(r, rad, rad, fill);
+            float x = playheadX();
+            r.set(0, top, Math.max(th, x), top + th);
+            c.drawRoundRect(r, rad, rad, played);
+            r.set(0, top, w, top + th);
+            r.inset(rim.getStrokeWidth() / 2, rim.getStrokeWidth() / 2);
+            c.drawRoundRect(r, rad, rad, rim);
+            float hw = Ui.dp(2.5f);
+            r.set(x - hw / 2, 0, x + hw / 2, h);
+            c.drawRoundRect(r, hw / 2, hw / 2, head);
         }
     }
 }

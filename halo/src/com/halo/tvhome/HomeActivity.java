@@ -692,8 +692,11 @@ public class HomeActivity extends Activity
     private void buildControls(Dropdown d) {
         d.ccGrid();
         d.ccLarge(0, 0, R.drawable.ic_power, "Power Off", then(() -> Actions.sleep(this)));
-        d.ccWide(0, 2, R.drawable.ic_wifi, 0xFF0A84FF, "Wi-Fi", networkName(), then(() -> Actions.wifi(this)));
-        d.ccWide(1, 2, R.drawable.ic_moon, MediaListener.dndOn(this) ? 0xFF8E7CFF : 0xFFFFFFFF,
+        String net = networkName();
+        d.ccWide(0, 2, "Ethernet".equals(net) ? R.drawable.ic_ethernet : R.drawable.ic_wifi, 0xFF0A84FF,
+                "Ethernet".equals(net) ? "Ethernet" : "Wi-Fi", "Ethernet".equals(net) ? "Connected" : net,
+                then(() -> Actions.wifi(this)));
+        d.ccWide(1, 2, R.drawable.ic_dnd, MediaListener.dndOn(this) ? 0xFF8E7CFF : 0xFFFFFFFF,
                 "Do Not Disturb", null, then(() -> {
                     boolean on = !MediaListener.dndOn(this);
                     if (MediaListener.setDnd(this, on)) {
@@ -702,12 +705,13 @@ public class HomeActivity extends Activity
                         Toast.makeText(this, "Do Not Disturb isn't available", Toast.LENGTH_SHORT).show();
                     }
                 }));
-        d.ccWide(2, 0, R.drawable.ic_headphones, 0xFFFFFFFF, "Accessories", pairedSummary(),
-                then(() -> Actions.bluetooth(this)));
+        d.ccWide(2, 0, R.drawable.ic_airplay, 0xFFFFFFFF, "Audio", null,
+                () -> { dropdown.hide(); ui.post(() -> openPanel(ControlBar.AUDIO, controlBar.buttons[ControlBar.CONTROLS])); });
         final TextView[] timer = new TextView[1];
-        timer[0] = d.ccWide(2, 2, R.drawable.ic_timer, 0xFF30D158, "Sleep Timer", SleepTimer.label(this), () -> {
+        timer[0] = d.ccWide(2, 2, R.drawable.ic_timer, SleepTimer.remaining(this) > 0 ? 0xFFFF9F0A : 0xFFFFFFFF,
+                "Sleep Timer", SleepTimer.remaining(this) > 0 ? SleepTimer.label(this) : null, () -> {
             SleepTimer.cycle(this);
-            timer[0].setText(SleepTimer.label(this));
+            Toast.makeText(this, "Sleep Timer: " + SleepTimer.label(this), Toast.LENGTH_SHORT).show();
         });
         d.ccSmall(3, 0, R.drawable.ic_photo, then(() -> Actions.start(this, new Intent(this, ArtModeActivity.class))));
         d.ccSmall(3, 1, R.drawable.ic_access, then(() -> Actions.accessibility(this)));
